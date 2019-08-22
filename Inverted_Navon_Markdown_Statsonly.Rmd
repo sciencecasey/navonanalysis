@@ -1,0 +1,76 @@
+---
+title: "Inverted_Navon_Markdown_Statsonly"
+author: "Casey Jayne"
+date: "8/12/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require("ggplot2")
+#require(GGally)
+require(reshape2)
+require(lme4)
+require(lattice)
+require(dplyr)
+require(tidyverse)
+require("haven")
+require(lsr)
+require(plyr)
+require(car)
+#require(fitdistrplus)
+#require(multcomp)
+#library(lmerTest)
+library(latticeExtra)  
+library(markdown)
+library(knitr)
+require(lubridate)
+library(glue)
+library(readr)
+```
+
+## R Markdown, Statistical Analysis for Navon/Inverted faces Pilot Study, Feusner 2019
+
+```{r setup, include=FALSE}
+navonlist=lapply(files, read.csv)
+navondf=do.call(rbind, navonlist)
+navondf=navondf[!navondf$Block=="P",]
+sum(navondf$Block=="P")
+#fix labels, dataset specific
+#some subjects labeled incorrectly, fix these
+navondf$Subject[navondf$Subject=="5031"]="50312"
+navondf$Subject[navondf$Subject=="501421"]="50142"
+navondf$Subject[navondf$Subject=="5020"]="50202"
+sum(navondf$Subject=="5031" || navondf$Subject=="501421" || navondf$Subject=="5020") 
+#make sure no subjects exist with old label (total should be zero)
+#add task column for export if grand DF ever desired
+navondf$task=rep("navon", length(navondf$Subject))
+#add Trial counter Column
+temp1=length(navondf$Session)/(numsubs*numses)
+navondf$trial=factor(rep(seq(1, length(navondf$Session)/(numsubs*numses)), 5))
+#Remove irrelevant variables columns and reorder
+navondf=subset(navondf, select= c(Subject, Session, task, trial, TargetLocation, 
+                                  Configuration, Stimuli.ACC, Stimuli.RT))
+#change needed columns to factors for grouping
+navondf=within(navondf, {
+  Session=as.factor(Session)
+  Subject=as.factor(Subject)
+  task=as.factor(task)
+})
+str(navondf)
+#add column for RT log (for calculations)
+navondf$logRT=log(navondf$Stimuli.RT)
+#make additional switch/nonswitch condition (based on configuration)
+navondf$Switch=as.factor(ifelse(navondf$Configuration=="GLS" |
+                        navondf$Configuration=="LGS", "switch", "nonswitch"))
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
