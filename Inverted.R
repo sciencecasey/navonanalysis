@@ -47,26 +47,30 @@ sum(invertdf$Comparison.ACC=="0", na.rm=T) #check that nonresponse different tha
 
 #add column for log RT
 invertdf$logRT=log(invertdf$Comparison.RT)
+sum(is.na(invertdf$logRT) && !is.na(invertdf$Comparison.RT)) #check no new NAs created
 
 #export the wrangled DF for safekeeping and BIDs
 write_tsv(invertdf, file.path(outputdir, "task-invertedfaces-navon_beh.tsv"))
 
 ########### Simple Statistics
+#identify functions of interest
+funs=list(mean=~mean(., na.rm=TRUE), sd=~sd(., na.rm=TRUE))
+
 #RT for all answered questions separated by Direction, regardless of ACC
 ##check where we are
 g=sum(invertdf$Comparison.ACC==0, na.rm = T) #55
 w=sum(invertdf$Comparison.ACC==1, na.rm = T) #485
-q=length(invertdf$logRT)-sum(is.na(invertdf$logRT)) #1327 [total should be the 2 above]
+q=(length(invertdf$logRT)-sum(is.na(invertdf$logRT))) #1327 [total should be the 2 above]
 ifelse (q!=g+w, 
-        glue('RT CODED WRONG {\n}check output'),
+        glue('RT CODED WRONG check output'),
         glue('RT coded for all responses'))
 
 Allresp_temp1= invertdf %>%
   group_by(Subject, Session, Direction) %>%
-  summarise_at(c("Comparison.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Comparison.ACC", "logRT"), funs)
 Allresp_temp2=invertdf %>%
   group_by(Session, Direction) %>%
-  summarise_at(c("Comparison.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Comparison.ACC", "logRT"), funs)
 Allresp_Istats=bind_rows(Allresp_temp1, Allresp_temp2)
 Allresp_Istats$Subject=ifelse(is.na(Allresp_Istats$Subject), "Overall", 
                              Allresp_Istats$Subject)
@@ -93,16 +97,16 @@ sum(is.na(invertdf$Comparison.ACC)) #now should be less NA for ACC than RT (show
 w=sum(invertdf$Comparison.ACC==1, na.rm = T) #1297
 q=length(invertdf$logRT)-sum(is.na(invertdf$logRT)) #1327 [total should be the 2 above]
 ifelse (q!=w, 
-        glue('RT CODED WRONG {\n}check output'),
+        glue('RT CODED WRONG check output'),
         glue('RT coded only for correct responses'))
 
 ###Simple Statistics
 Allresp_temp1= invertdf %>%
   group_by(Subject, Session, Direction) %>%
-  summarise_at(c("Comparison.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Comparison.ACC", "logRT"), funs)
 Allresp_temp2=invertdf %>%
   group_by(Session, Direction) %>%
-  summarise_at(c("Comparison.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Comparison.ACC", "logRT"), funs)
 Allaccresp_Istats=bind_rows(Allresp_temp1, Allresp_temp2)
 Allaccresp_Istats$Subject=ifelse(is.na(Allaccresp_Istats$Subject), "Overall", 
                                 Allaccresp_Istats$Subject)

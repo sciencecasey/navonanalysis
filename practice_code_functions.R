@@ -31,3 +31,10 @@ test="casey"
 task="event"
 glue('name{test}') %>%
   
+#prompting for input
+  
+subject= function(){
+  PID=readline(prompt = "Enter the subject number ")
+  subj=return(PID)
+}
+subject()

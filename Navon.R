@@ -45,8 +45,16 @@ navondf=within(navondf, {
 })
 str(navondf)
 
+#recode non-repsponse as NA response time
+sum(navondf$Stimuli.RT=="0") #checking amount (28)
+is.na(navondf$Stimuli.RT)=navondf$Stimuli.RT=="0" #recode
+is.na(navondf$Stimuli.ACC)=is.na(navondf$Stimuli.RT) #recode
+sum(is.na(navondf$Stimuli.ACC)) #checking nonresponse (now there are 28)
+sum(navondf$Stimuli.ACC=="0", na.rm=T) #check that nonresponse different than inacc
+
 #add column for RT log (for calculations)
 navondf$logRT=log(navondf$Stimuli.RT)
+sum(is.na(navondf$logRT) && !is.na(navondf$Stimuli.RT)) #check that no new NAs created
 
 #make additional switch/nonswitch condition (based on configuration)
 navondf$Switch=as.factor(ifelse(navondf$Configuration=="GLS" |
@@ -56,51 +64,57 @@ navondf$Switch=as.factor(ifelse(navondf$Configuration=="GLS" |
 write_tsv(navondf, file.path(outputdir, "task-navon_beh.tsv"))
 
 ########### Simple Statistics
+###Save functions of interest
+funs=list(mean = ~mean(., na.rm=TRUE), sd = ~sd(., na.rm = TRUE))
+
+
 #RT for all answered questions separated by Switch/Nonswitch, regardless of ACC
 ##check where we are
-g=sum(navondf$Stimuli.ACC==0, na.rm = T) #30
-w=sum(navondf$Stimuli.ACC==1, na.rm = T) #1297
-q=length(navondf$logRT)-sum(is.na(navondf$logRT)) #1327 [total should be the 2 above]
+g=sum(navondf$Stimuli.ACC==0, na.rm = T)#53
+w=sum(navondf$Stimuli.ACC==1, na.rm = T) #1227
+q=length(navondf$logRT)-sum(is.na(navondf$logRT)) #1280 [total should be the 2 above]
 ifelse (q!=g+w, 
         glue('RT CODED WRONG {\n}check output'),
         glue('RT coded for all responses'))
 
-Allresp_temp1= navondf %>%
-  group_by(Subject, Switch, Configuration, TargetLocation, Session) %>%
-  summarise_at(c("Stimuli.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
-Allresp_temp2=navondf %>%
-  group_by(Switch, Configuration, TargetLocation, Session) %>%
-  summarise_at(c("Stimuli.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
-Allresp_stats=bind_rows(Allresp_temp1, Allresp_temp2)
-Allresp_stats$Subject=ifelse(is.na(Allresp_stats$Subject), "Overall", 
+Allresp_temp1= subset(navondf, select=c(Subject, Session, Switch, Stimuli.ACC, logRT)) %>%
+  group_by(Subject, Switch, Session) %>%
+  summarise_at(c("Stimuli.ACC", "logRT"), funs)
+Allresp_temp2=subset(navondf, 
+                     select=c(Subject, Session, Switch, Stimuli.ACC, logRT)) %>%
+  group_by(Switch, Session) %>%
+  summarise_at(c("Stimuli.ACC", "logRT"), funs)
+Allresp_swichstats=bind_rows(Allresp_temp1, Allresp_temp2)
+Allresp_switchstats$Subject=ifelse(is.na(Allresp_stats$Subject), "Overall", 
                                     Allresp_stats$Subject)
-rm(Allresp_temp1, Allresp_temp2)
+#rm(Allresp_temp1, Allresp_temp2)
 
 Allresp_switch_temp1= navondf %>%
   group_by(Subject, Session, Switch) %>%
-  summarise_at(c("Stimuli.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Stimuli.ACC", "logRT"), funs)
 Allresp_switch_temp2=navondf %>%
   group_by(Session, Switch) %>%
-  summarise_at(c("Stimuli.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Stimuli.ACC", "logRT"), funs)
 Allresp_switch_stats=bind_rows(Allresp_switch_temp1, Allresp_switch_temp2)
 Allresp_switch_stats$Subject=ifelse(is.na(Allresp_switch_stats$Subject), "Overall", 
                                     Allresp_switch_stats$Subject)
 rm(Allresp_switch_temp1, Allresp_switch_temp2)
 
 #RT for all answered questions separated by TARGET LOCATION(global/local), regardless of ACC
-Allresp_localglobal_temp1= navondf %>%
+Allresp_localglobal_temp1= subset(navondf, 
+                                  select=c(Subject, Session, TargetLocation, Stimuli.ACC, logRT)) %>%
   group_by(Subject, Session, TargetLocation) %>%
-  summarise_at(c("Stimuli.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Stimuli.ACC", "logRT"), funs)
 Allresp_localglobal_temp2=navondf %>%
   group_by(Session, TargetLocation) %>%
-  summarise_at(c("Stimuli.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Stimuli.ACC", "logRT"), funs)
 Allresp_localglobal_stats=bind_rows(Allresp_localglobal_temp1, Allresp_localglobal_temp2)
 Allresp_localglobal_stats$Subject=ifelse(is.na(Allresp_localglobal_stats$Subject), "Overall", 
                                     Allresp_localglobal_stats$Subject)
-rm(Allresp_localglobal_temp1, Allresp_localglobal_temp2)
+#rm(Allresp_localglobal_temp1, Allresp_localglobal_temp2)
 
 #print output as larg df
-Allresp_stats=bind_cols(Allresp_switch_stats, Allresp_localglobal_stats)
+Allresp_navonstats=bind_cols(Allresp_switch_stats, Allresp_localglobal_stats)
 write_tsv(Allresp_stats, file.path(outputdir, "task-navon_ses-both_acq-allresp_stats-meansd.tsv"))
 
 ###############Repeated Measures Anovas and GLMMs
@@ -133,10 +147,10 @@ ifelse (q!=w,
 ###Simple Statistics
 Allresp_temp1= navondf %>%
   group_by(Subject, Switch, Configuration, TargetLocation, Session) %>%
-  summarise_at(c("Stimuli.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Stimuli.ACC", "logRT"), funs)
 Allresp_temp2=navondf %>%
   group_by(Switch, Configuration, TargetLocation, Session) %>%
-  summarise_at(c("Stimuli.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Stimuli.ACC", "logRT"), funs)
 Allaccresp_stats=bind_rows(Allresp_temp1, Allresp_temp2)
 Allaccresp_stats$Subject=ifelse(is.na(Allaccresp_stats$Subject), "Overall", 
                              Allaccresp_stats$Subject)
@@ -144,10 +158,10 @@ rm(Allresp_temp1, Allresp_temp2)
 
 Allresp_switch_temp1= navondf %>%
   group_by(Subject, Session, Switch) %>%
-  summarise_at(c("Stimuli.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Stimuli.ACC", "logRT"), funs)
 Allresp_switch_temp2=navondf %>%
   group_by(Session, Switch) %>%
-  summarise_at(c("Stimuli.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Stimuli.ACC", "logRT"), funs)
 Allaccresp_switch_stats=bind_rows(Allresp_switch_temp1, Allresp_switch_temp2)
 Allaccresp_switch_stats$Subject=ifelse(is.na(Allaccresp_switch_stats$Subject), "Overall", 
                                     Allaccresp_switch_stats$Subject)
@@ -156,10 +170,10 @@ rm(Allresp_switch_temp1, Allresp_switch_temp2)
 #RT for all answered questions separated by TARGET LOCATION(global/local), regardless of ACC
 Allresp_localglobal_temp1= navondf %>%
   group_by(Subject, Session, TargetLocation) %>%
-  summarise_at(c("Stimuli.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Stimuli.ACC", "logRT"), funs)
 Allresp_localglobal_temp2=navondf %>%
   group_by(Session, TargetLocation) %>%
-  summarise_at(c("Stimuli.ACC", "logRT"), funs(mean,sd), na.rm=TRUE)
+  summarise_at(c("Stimuli.ACC", "logRT"), funs)
 Allaccresp_localglobal_stats=bind_rows(Allresp_localglobal_temp1, Allresp_localglobal_temp2)
 Allaccresp_localglobal_stats$Subject=ifelse(is.na(Allaccresp_localglobal_stats$Subject), "Overall", 
                                          Allaccresp_localglobal_stats$Subject)
