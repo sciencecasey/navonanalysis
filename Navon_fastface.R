@@ -1,40 +1,7 @@
----
-title: "Navon_FastFace_Statsonly"
-author: "Casey Jayne"
-date: "8/12/2019"
-output: 
-  html_document:
-    df_print: paged
-    toc= TRUE
----
-
-```{r libs, include=FALSE}
-require("ggplot2")
-#require(GGally)
-require(reshape2)
-require(lme4)
-require(lattice)
-require(dplyr)
-require(tidyverse)
-require("haven")
-require(lsr)
-require(plyr)
-require(car)
-#require(fitdistrplus)
-#require(multcomp)
-#library(lmerTest)
-library(latticeExtra)  
-library(markdown)
-library(knitr)
-require(lubridate)
-library(glue)
-library(readr)
-```
-
- R Markdown, Statistical Analysis for Navon/Inverted faces Pilot Study, Fast Face Intervention 
- Feusner 2019
-
-```{r dataimport, include=FALSE}
+#######Created for Analyzing Navon data over 2 sessions for 
+#2019 VM Pilot study Fast Face
+##Casey 08/01/2019
+####################DATA CLEANING ########################################
 #import all navon files as a DF
 inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/fast'
 files=list.files(path='/Users/casey/Desktop/navonanalysis-master/data/source/fast',
@@ -96,32 +63,24 @@ sum(is.na(navondf$logRT) && !is.na(navondf$Stimuli.RT)) #check that no new NAs c
 navondf$Switch=as.factor(ifelse(navondf$Configuration=="GLS" |
                         navondf$Configuration=="LGS", "switch", "nonswitch"))
 
-```
+#export the wrangled DF for safekeeping and BIDs
+write_tsv(navondf, file.path(outputdir, "task-navon_beh.tsv"))
 
-# Simple Statistics, All Responses regardless of ACC
-
-```{r, functions, include=FALSE}
+########### Simple Statistics
 ###Save functions of interest
 funs=list(mean = ~mean(., na.rm=TRUE), sd = ~sd(., na.rm = TRUE))
 
-```
 
-Check where we are
-
-```{r, allrespcheck, echo=FALSE}
+#Simple Stats for all answered questions separated by Switch/Nonswitch, regardless of ACC
+##check where we are
 g=sum(navondf$Stimuli.ACC==0, na.rm = T)#53
 w=sum(navondf$Stimuli.ACC==1, na.rm = T) #1227
 q=length(navondf$logRT)-sum(is.na(navondf$logRT)) #1280 [total should be the 2 above]
 ifelse (q!=g+w, 
         glue('RT CODED WRONG {\n}check output'),
         glue('RT coded for all responses'))
-```
 
-## Separated by Switch/Nonswitch
-Create a DataFrame include an "Overall" Statistical Output
-Separated by Switch/NonSwitch Viewing Condition and Session Number
 
-```{r, simpleswitch, echo=FALSE, warning=FALSE}
 Allresp_switch_temp1= navondf %>%
   group_by(Subject, Session, Switch) %>%
   summarise_at(c("Stimuli.ACC", "logRT"), funs)
@@ -132,16 +91,8 @@ Allresp_switch_stats=bind_rows(Allresp_switch_temp1, Allresp_switch_temp2)
 Allresp_switch_stats$Subject=ifelse(is.na(Allresp_switch_stats$Subject), "Overall", 
                                     Allresp_switch_stats$Subject)
 #rm(Allresp_switch_temp1, Allresp_switch_temp2)
-```
-```{r, include=TRUE, cols.print=7, rows.print=24}
-print(Allresp_switch_stats)
-```
 
-## Separated by Global/Local positioning
-Create a DataFrame include an "Overall" Statistical Output
-Separated by Target Location (Global/Local) and Session Number
-
-```{r, simpletagetlocation, echo=FALSE, warning=FALSE}
+#Simple Stats all answered questions separated by TARGET LOCATION(global/local), regardless of ACC
 Allresp_localglobal_temp1= subset(navondf, 
                                   select=c(Subject, Session, TargetLocation, Stimuli.ACC, logRT)) %>%
   group_by(Subject, Session, TargetLocation) %>%
@@ -153,62 +104,49 @@ Allresp_localglobal_stats=bind_rows(Allresp_localglobal_temp1, Allresp_localglob
 Allresp_localglobal_stats$Subject=ifelse(is.na(Allresp_localglobal_stats$Subject), "Overall", 
                                     Allresp_localglobal_stats$Subject)
 #rm(Allresp_localglobal_temp1, Allresp_localglobal_temp2)
-```
-```{r, include=TRUE, cols.print=7, rows.print=24}
-print(Allresp_localglobal_stats)
-```
 
-# Repeated Measures Anovas, All Responses regardless of Accuracy
-## RT by Switch/Non-Switch
+#print output as larg df
+Allresp_navonstats=bind_cols(Allresp_switch_stats, Allresp_localglobal_stats)
+write_tsv(Allresp_stats, file.path(outputdir, "task-navon_ses-both_acq-allresp_stats-meansd.tsv"))
 
-```{r, switchrtanova, include=TRUE}
+###############Repeated Measures Anovas and GLMMs
+####RT, all answered Repeated Measures Switch
 summary(aov(logRT~Switch+Error(Subject*Session/Switch), data=navondf))
+#lmer
 summary(lmer(logRT~1+Switch+Session+Switch:Session+(1+Session|Subject), data=navondf)) 
 anova(lmer(logRT~1+Switch+Session+Switch:Session+(1+Session|Subject), data=navondf))
-```
 
-## RT by Global/Local
-```{r, targetlocrtanova}
+####RT, all answered Repeated Measures Local/Global
 summary(aov(logRT~TargetLocation+Error(Subject*Session/TargetLocation), data=navondf))
+#lmer
 summary(lmer(logRT~1+TargetLocation+Session+TargetLocation:Session+(1+Session|Subject), data=navondf)) 
 anova(lmer(logRT~1+TargetLocation+Session+TargetLocation:Session+(1+Session|Subject), data=navondf))
-```
 
-## ACC by Switch/Non-Switch
-```{r, switchaccanova}
+##ACC by Switch/Non-Switch
 summary(aov(Stimuli.ACC~Switch+Error(Subject*Session/Switch), data=navondf))
 summary(lmer(Stimuli.ACC~1+Switch+Session+Switch:Session+(1+Session|Subject), data=navondf)) 
 anova(lmer(Stimuli.ACC~1+Switch+Session+Switch:Session+(1+Session|Subject), data=navondf))
-```
 
-## ACC by Global/Local
-```{r, targetlocaccanova}
+##ACC by Global/Local
 summary(aov(Stimuli.ACC~TargetLocation+Error(Subject*Session/TargetLocation), data=navondf))
 summary(lmer(Stimuli.ACC~1+TargetLocation+Session+TargetLocation:Session+(1+Session|Subject), data=navondf)) 
 anova(lmer(Stimuli.ACC~1+TargetLocation+Session+TargetLocation:Session+(1+Session|Subject), data=navondf))
-```
 
-# Simple Stats including only ACC answers for RT
-Check where we are 
-```{r, checkallacc, echo=FALSE}
+##########RT ANALYSIS only ACC answers
 #recode ACC=0 as RT=NA 
 sum(is.na(navondf$logRT))
 is.na(navondf$logRT)=navondf$Stimuli.ACC==0
 sum(is.na(navondf$logRT)) #checking
 sum(is.na(navondf$Stimuli.ACC)) #now should be less NA for ACC than RT (showing incorrect are also NA RT)
+
 ##check where we are
 w=sum(navondf$Stimuli.ACC==1, na.rm = T) #1297
 q=length(navondf$logRT)-sum(is.na(navondf$logRT)) #1327 [total should be the 2 above]
 ifelse (q!=w, 
         glue('RT CODED WRONG {\n}check output'),
         glue('RT coded only for correct responses'))
-```
 
-## Separated by Switch/Nonswitch Condition
-Create a DataFrame include an "Overall" Statistical Output
-Separated by Switch/NonSwitch Viewing Condition and Session Number
-
-```{r, simpleaccswitch, include=FALSE, warning=FALSE}
+###Simple Statistics
 Allresp_switch_temp1= navondf %>%
   group_by(Subject, Session, Switch) %>%
   summarise_at(c("Stimuli.ACC", "logRT"), funs)
@@ -218,16 +156,9 @@ Allresp_switch_temp2=navondf %>%
 Allaccresp_switch_stats=bind_rows(Allresp_switch_temp1, Allresp_switch_temp2)
 Allaccresp_switch_stats$Subject=ifelse(is.na(Allaccresp_switch_stats$Subject), "Overall", 
                                     Allaccresp_switch_stats$Subject)
-rm(Allresp_switch_temp1, Allresp_switch_temp2)
-```
-```{r, echo=FALSE}
-print(Allaccresp_switch_stats)
-```
+#rm(Allresp_switch_temp1, Allresp_switch_temp2)
 
-## Separated by Global/Local positioning
-Create a DataFrame include an "Overall" Statistical Output
-Separated by Target Location (Global/Local) and Session Number
-```{r, simpleaccGL, include=FALSE, warning=FALSE}
+#Simple Stats for all answered questions separated by TARGET LOCATION(global/local), regardless of ACC
 Allresp_localglobal_temp1= navondf %>%
   group_by(Subject, Session, TargetLocation) %>%
   summarise_at(c("Stimuli.ACC", "logRT"), funs)
@@ -238,24 +169,36 @@ Allaccresp_localglobal_stats=bind_rows(Allresp_localglobal_temp1, Allresp_localg
 Allaccresp_localglobal_stats$Subject=ifelse(is.na(Allaccresp_localglobal_stats$Subject), "Overall", 
                                          Allaccresp_localglobal_stats$Subject)
 #rm(Allresp_localglobal_temp1, Allresp_localglobal_temp2)
-```
-```{r, echo=FALSE}
-print(Allaccresp_localglobal_stats)
-```
 
-# Only Accurate Responses Response Times Anova/GLMMs
-## RT by Switch/Non-Switch
+#print output as larg df
+Allaccresp_stats=bind_cols(Allaccresp_switch_stats, Allaccresp_localglobal_stats)
+write_tsv(Allaccresp_stats, file.path(outputdir, "task-navon_ses-both_acq-accresp_stats-meansd.tsv"))
 
-```{r, switchrtaccanova, include=TRUE}
+###############Repeated Measures Anovas and GLMMs
+####RT, acc answered Repeated Measures Switch
 summary(aov(logRT~Switch+Error(Subject*Session/Switch), data=navondf))
+#lmer
 summary(lmer(logRT~1+Switch+Session+Switch:Session+(1+Session|Subject), data=navondf)) 
 anova(lmer(logRT~1+Switch+Session+Switch:Session+(1+Session|Subject), data=navondf))
-```
 
-## RT by Target Location
-```{r, include=TRUE}
+####RT, all answered Repeated Measures Local/Global
 summary(aov(logRT~TargetLocation+Error(Subject*Session/TargetLocation), data=navondf))
 #lmer
 summary(lmer(logRT~1+TargetLocation+Session+TargetLocation:Session+(1+Session|Subject), data=navondf)) 
 anova(lmer(logRT~1+TargetLocation+Session+TargetLocation:Session+(1+Session|Subject), data=navondf))
-```
+
+
+########## ACC Analysis
+###
+###############Repeated Measures Anovas and GLMMs
+####Repeated Measures Switch
+summary(aov(Stimuli.ACC~Switch+Error(Subject*Session/Switch), data=navondf))
+#lmer
+summary(lmer(Stimuli.ACC~1+Switch+Session+Switch:Session+(1+Session|Subject), data=navondf)) 
+anova(lmer(Stimuli.ACC~1+Switch+Session+Switch:Session+(1+Session|Subject), data=navondf))
+
+####RT, all accurate Repeated Measures Local/Global
+summary(aov(Stimuli.ACC~TargetLocation+Error(Subject*Session/TargetLocation), data=navondf))
+#lmer
+summary(lmer(Stimuli.ACC~1+TargetLocation+Session+TargetLocation:Session+(1+Session|Subject), data=navondf)) 
+anova(lmer(Stimuli.ACC~1+TargetLocation+Session+TargetLocation:Session+(1+Session|Subject), data=navondf))

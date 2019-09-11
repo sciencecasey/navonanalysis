@@ -1,17 +1,17 @@
 #######Created for Analyzing Inverted Faces data over 2 sessions 
-#for 2019 VM Pilot study
-##Casey 08/01/2019
+#for 2019 VM Pilot study, Attention Modulation Intervention
+##Casey 09/10/2019
 
 ####################DATA CLEANING ########################################
 #import all IF files as a DF
-inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/fast'
-files=list.files(path='/Users/casey/Desktop/navonanalysis-master/data/source/fast',
+inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/attmod'
+files=list.files(path='/Users/casey/Desktop/navonanalysis-master/data/source/attmod',
                  pattern="*task-invertedfaces(.*)csv$", recursive = T, full.names = TRUE)
 invertlist=lapply(files, read.csv)
 invertdf=do.call(rbind, invertlist)
 str(invertdf)
-outputdir='/Users/casey/Desktop/navonanalysis-master/data/derivatives/fast'
-numsubs=5 #total number subjects
+outputdir='/Users/casey/Desktop/navonanalysis-master/data/derivatives/attmod'
+numsubs=3 #total number subjects
 numses=2 #total number of sessions
 
 #dataset specific!
@@ -30,17 +30,17 @@ invertdf$task=rep("invertedfaces", length(invertdf$Subject))
 #add intervention column
 invertdf$intervention=rep("fastface", length(invertdf$Subject))
 #add Trial counter Column for only the long
-invertdf$trial=factor(rep(seq(1, length(invertdf$Session)/(numsubs*numses)), numsubs))
+invertdf$trial=factor(rep(seq(1, length(navondf$Session)/(numsubs*numses)), numsubs))
 
 #subset, select, and factor relevant portions
 #using the subsetted trial counter rather than original
 invertdf=subset(invertdf, select=c(Subject, Session, task, intervention, trial, Direction, 
                                    Comparison.ACC, Comparison.RT))
 invertdf=within(invertdf, {
-                  Subject=factor(Subject)
-                  Session=factor(Session)
-                  trial=factor(trial)
-                  task=factor(task)})
+  Subject=factor(Subject)
+  Session=factor(Session)
+  Trial=factor(Trial)
+  task=factor(task)})
 str(invertdf)
 
 #recode non-repsponse as NA response time
@@ -78,7 +78,7 @@ Allresp_temp2=invertdf %>%
   summarise_at(c("Comparison.ACC", "logRT"), funs)
 Allresp_Istats=bind_rows(Allresp_temp1, Allresp_temp2)
 Allresp_Istats$Subject=ifelse(is.na(Allresp_Istats$Subject), "Overall", 
-                             Allresp_Istats$Subject)
+                              Allresp_Istats$Subject)
 rm(Allresp_temp1, Allresp_temp2)
 
 #print output as df
@@ -114,7 +114,7 @@ Allresp_temp2=invertdf %>%
   summarise_at(c("Comparison.ACC", "logRT"), funs)
 Allaccresp_Istats=bind_rows(Allresp_temp1, Allresp_temp2)
 Allaccresp_Istats$Subject=ifelse(is.na(Allaccresp_Istats$Subject), "Overall", 
-                                Allaccresp_Istats$Subject)
+                                 Allaccresp_Istats$Subject)
 rm(Allresp_temp1, Allresp_temp2)
 
 #print output as  df
@@ -130,7 +130,7 @@ anova(lmer(logRT~1+Direction+Session+Direction:Session+(1+Session|Subject), data
 ########## ACC Analysis
 ###
 ###############Repeated Measures Anovas and GLMMs
-####ACC
+####RT, all answered Repeated Measures
 summary(aov(Comparison.ACC~Direction+Error(Subject*Session/Direction), data=invertdf))
 #lmer
 summary(lmer(Comparison.ACC~1+Direction+Session+Direction:Session+(1+Session|Subject), data=invertdf))

@@ -1,13 +1,12 @@
 ---
-title: "Navon_FastFace_Statsonly"
+title: "Navon_AttentionMod_Statsonly"
 author: "Casey Jayne"
-date: "8/12/2019"
+date: "9/10/2019"
 output: 
   html_document:
     df_print: paged
-    toc= TRUE
+    toc: TRUE
 ---
-
 ```{r libs, include=FALSE}
 require("ggplot2")
 #require(GGally)
@@ -31,19 +30,18 @@ library(glue)
 library(readr)
 ```
 
- R Markdown, Statistical Analysis for Navon/Inverted faces Pilot Study, Fast Face Intervention 
+ R Markdown, Statistical Analysis for Navon/Inverted faces Pilot Study, Attention Modulation Intervention 
  Feusner 2019
 
 ```{r dataimport, include=FALSE}
-#import all navon files as a DF
-inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/fast'
-files=list.files(path='/Users/casey/Desktop/navonanalysis-master/data/source/fast',
-                pattern="*task-navon(.*)csv$", recursive = T, full.names = TRUE)
-navonlist=lapply(files, read.csv)
+inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/attmod'
+files=list.files(path='/Users/casey/Desktop/navonanalysis-master/data/source/attmod',
+                 pattern="*task-navon(.*)csv$", recursive = T, full.names = TRUE)
+navonlist=lapply(files, read_csv)
 navondf=do.call(rbind, navonlist)
 str(navondf)
-outputdir='/Users/casey/Desktop/navonanalysis-master/data/derivatives/fast'
-numsubs=5 #total number subjects
+outputdir='/Users/casey/Desktop/navonanalysis-master/data/derivatives/attmod'
+numsubs=3 #total number subjects
 numses=2 #total number of sessions
 
 #remove practice block
@@ -51,21 +49,12 @@ navondf=navondf[!navondf$Block=="P",]
 sum(navondf$Block=="P")
 str(navondf) 
 
-#fix labels, dataset specific
-#some subjects labeled incorrectly, fix these
-navondf$Subject[navondf$Subject=="5031"]="50312"
-navondf$Subject[navondf$Subject=="501421"]="50142"
-navondf$Subject[navondf$Subject=="5020"]="50202"
-sum(navondf$Subject=="5031" || navondf$Subject=="501421" || navondf$Subject=="5020") 
-#make sure no subjects exist with old label (total should be zero)
-
 #add task column for export if grand DF ever desired
 navondf$task=rep("navon", length(navondf$Subject))
 #add group column for export if grand DF ever desired
-navondf$intervention=rep("fastface", length(navondf$Subject))
+navondf$intervention=rep("attentionmod", length(navondf$Subject))
 
 #add Trial counter Column
-temp1=length(navondf$Session)/(numsubs*numses)
 navondf$trial=factor(rep(seq(1, length(navondf$Session)/(numsubs*numses)), numsubs))
 
 #Remove irrelevant variables columns and reorder
@@ -77,15 +66,15 @@ navondf=within(navondf, {
   Session=as.factor(Session)
   Subject=as.factor(Subject)
   task=as.factor(task)
-  
+  intervention=as.factor(intervention)
 })
 str(navondf)
 
 #recode non-repsponse as NA response time
-sum(navondf$Stimuli.RT=="0") #checking amount (28)
+sum(navondf$Stimuli.RT=="0") #checking amount (10)
 is.na(navondf$Stimuli.RT)=navondf$Stimuli.RT=="0" #recode
 is.na(navondf$Stimuli.ACC)=is.na(navondf$Stimuli.RT) #recode
-sum(is.na(navondf$Stimuli.ACC)) #checking nonresponse (now there are 28)
+sum(is.na(navondf$Stimuli.ACC)) #checking nonresponse (now there are 10)
 sum(navondf$Stimuli.ACC=="0", na.rm=T) #check that nonresponse different than inacc
 
 #add column for RT log (for calculations)
@@ -94,8 +83,7 @@ sum(is.na(navondf$logRT) && !is.na(navondf$Stimuli.RT)) #check that no new NAs c
 
 #make additional switch/nonswitch condition (based on configuration)
 navondf$Switch=as.factor(ifelse(navondf$Configuration=="GLS" |
-                        navondf$Configuration=="LGS", "switch", "nonswitch"))
-
+                                  navondf$Configuration=="LGS", "switch", "nonswitch"))
 ```
 
 # Simple Statistics, All Responses regardless of ACC
