@@ -1,17 +1,50 @@
-#######Created for Analyzing Inverted Faces data over 2 sessions 
-#for 2019 VM Pilot study
-##Casey 08/01/2019
+---
+title: "Inverted_AttenMod"
+author: "Casey Jayne"
+date: "9/11/2019"
+output: 
+  html_document:
+    df_print: paged
+    toc: TRUE
+---
 
+```{r libs, include=FALSE}
+require("ggplot2")
+#require(GGally)
+require(reshape2)
+require(lme4)
+require(lattice)
+require(dplyr)
+require(tidyverse)
+require("haven")
+require(lsr)
+require(plyr)
+require(car)
+#require(fitdistrplus)
+#require(multcomp)
+#library(lmerTest)
+library(latticeExtra)  
+library(markdown)
+library(knitr)
+require(lubridate)
+library(glue)
+library(readr)
+```
+
+R Markdown, Statistical Analysis for Navon/Inverted faces Pilot Study, Fast Face Intervention 
+ Feusner 2019
+
+```{r dataimport, include=FALSE}
 ####################DATA CLEANING ########################################
 #import all IF files as a DF
-inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/fast'
-files=list.files(path='/Users/casey/Desktop/navonanalysis-master/data/source/fast',
+inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/attmod'
+files=list.files(path='/Users/casey/Desktop/navonanalysis-master/data/source/attmod',
                  pattern="*task-invertedfaces(.*)csv$", recursive = T, full.names = TRUE)
 invertlist=lapply(files, read.csv)
 invertdf=do.call(rbind, invertlist)
 str(invertdf)
-outputdir='/Users/casey/Desktop/navonanalysis-master/data/derivatives/fast'
-numsubs=5 #total number subjects
+outputdir='/Users/casey/Desktop/navonanalysis-master/data/derivatives/attmod'
+numsubs=3 #total number subjects
 numses=2 #total number of sessions
 
 #dataset specific!
@@ -30,17 +63,17 @@ invertdf$task=rep("invertedfaces", length(invertdf$Subject))
 #add intervention column
 invertdf$intervention=rep("fastface", length(invertdf$Subject))
 #add Trial counter Column for only the long
-invertdf$trial=factor(rep(seq(1, length(invertdf$Session)/(numsubs*numses)), numsubs))
+invertdf$trial=factor(rep(seq(1, length(navondf$Session)/(numsubs*numses)), numsubs))
 
 #subset, select, and factor relevant portions
 #using the subsetted trial counter rather than original
 invertdf=subset(invertdf, select=c(Subject, Session, task, intervention, trial, Direction, 
                                    Comparison.ACC, Comparison.RT))
 invertdf=within(invertdf, {
-                  Subject=factor(Subject)
-                  Session=factor(Session)
-                  trial=factor(trial)
-                  task=factor(task)})
+  Subject=factor(Subject)
+  Session=factor(Session)
+  Trial=factor(Trial)
+  task=factor(task)})
 str(invertdf)
 
 #recode non-repsponse as NA response time
@@ -53,23 +86,32 @@ sum(invertdf$Comparison.ACC=="0", na.rm=T) #check that nonresponse different tha
 #add column for log RT
 invertdf$logRT=log(invertdf$Comparison.RT)
 sum(is.na(invertdf$logRT) && !is.na(invertdf$Comparison.RT)) #check no new NAs created
+```
 
-#export the wrangled DF for safekeeping and BIDs
-write_tsv(invertdf, file.path(outputdir, "task-invertedfaces-navon_beh.tsv"))
+# Simple Statistics, All Responses regardless of ACC
 
-########### Simple Statistics
-#identify functions of interest
-funs=list(mean=~mean(., na.rm=TRUE), sd=~sd(., na.rm=TRUE))
+```{r, functions, include=FALSE}
+###Save functions of interest
+funs=list(mean = ~mean(., na.rm=TRUE), sd = ~sd(., na.rm = TRUE))
 
-#RT for all answered questions separated by Direction, regardless of ACC
-##check where we are
+```
+
+Check where we are
+
+```{r, allrespcheck, echo=FALSE}
 g=sum(invertdf$Comparison.ACC==0, na.rm = T) #55
 w=sum(invertdf$Comparison.ACC==1, na.rm = T) #485
 q=(length(invertdf$logRT)-sum(is.na(invertdf$logRT))) #1327 [total should be the 2 above]
 ifelse (q!=g+w, 
         glue('RT CODED WRONG check output'),
         glue('RT coded for all responses'))
+```
 
+## Separated by Switch/Nonswitch
+Create a DataFrame include an "Overall" Statistical Output
+Separated by Inverted or Upright Viewing Condition and Session Number
+
+```{r, simpleinvert, echo=FALSE, warning=FALSE}
 Allresp_temp1= invertdf %>%
   group_by(Subject, Session, Direction) %>%
   summarise_at(c("Comparison.ACC", "logRT"), funs)
@@ -79,13 +121,33 @@ Allresp_temp2=invertdf %>%
 Allresp_Istats=bind_rows(Allresp_temp1, Allresp_temp2)
 Allresp_Istats$Subject=ifelse(is.na(Allresp_Istats$Subject), "Overall", 
                              Allresp_Istats$Subject)
-rm(Allresp_temp1, Allresp_temp2)
+#rm(Allresp_temp1, Allresp_temp2)
+```
+```{r, include=TRUE, cols.print=7, rows.print=24}
+print(Allresp_Istats)
+```
 
-#print output as df
-write_tsv(Allresp_Istats, file.path(outputdir, "task-invertedfaces_ses-both_acq-allresp_stats-meansd.tsv"))
+# Repeated Measures Anovas, All Responses regardless of Accuracy
+## RT by Inverted/Upright
 
-#Graphs
-#RT
+```{r, invertrtanova, include=TRUE}
+summary(aov(logRT~Direction+Error(Subject*Session/Direction), data=invertdf))
+summary(lmer(logRT~1+Direction+Session+Direction:Session+(1+Session|Subject), data=invertdf))
+anova(lmer(logRT~1+Direction+Session+Direction:Session+(1+Session|Subject), data=invertdf))
+```
+
+## ACC by Inverted/Upright
+
+```{r, invertaccanova}
+summary(aov(Comparison.ACC~Direction+Error(Subject*Session/Direction), data=invertdf))
+#lmer
+summary(lmer(Comparison.ACC~1+Direction+Session+Direction:Session+(1+Session|Subject), data=invertdf))
+anova(lmer(Comparison.ACC~1+Direction+Session+Direction:Session+(1+Session|Subject), data=invertdf))
+```
+
+## Graphs, only Accurate RTs
+
+```{r, include=TRUE, echo=FALSE}
 xyplot(logRT_mean~Session|Subject, 
        data=Allresp_temp1, 
        groups=Direction, 
@@ -105,8 +167,10 @@ xyplot(logRT_mean~Session|Subject,
        layout=c(5,1), aspect=5,
        axis=axis.grid
 )
+```
 
-#ACC
+### ACC
+```{r, include=TRUE, echo=FALSE}
 xyplot(Comparison.ACC_mean~Session|Subject, 
        data=Allresp_temp1, 
        groups=Direction, 
@@ -124,17 +188,12 @@ xyplot(Comparison.ACC_mean~Session|Subject,
          #fontfamily = "HersheySans", col=c("blue", "pink"))
        },
        layout=c(5,1), aspect=5,
-       axis=axis.grid
-)
+       axis=axis.grid)
+```
 
-###############Repeated Measures Anovas and GLMMs
-####RT, all answered Repeated Measures
-summary(aov(logRT~Direction+Error(Subject*Session/Direction), data=invertdf))
-#lmer
-summary(lmer(logRT~1+Direction+Session+Direction:Session+(1+Session|Subject), data=invertdf))
-anova(lmer(logRT~1+Direction+Session+Direction:Session+(1+Session|Subject), data=invertdf))
-
-##########RT ANALYSIS only ACC answers
+# Simple Stats including only ACC answers for RT
+Check where we are 
+```{r, checkallacc, echo=FALSE}
 #recode ACC=0 as RT=NA 
 sum(is.na(invertdf$logRT))
 is.na(invertdf$logRT)=invertdf$Comparison.ACC==0
@@ -147,8 +206,14 @@ q=length(invertdf$logRT)-sum(is.na(invertdf$logRT)) #1327 [total should be the 2
 ifelse (q!=w, 
         glue('RT CODED WRONG check output'),
         glue('RT coded only for correct responses'))
+```
 
-###Simple Statistics
+
+## Separated by Inverted/Upright Condition
+Create a DataFrame include an "Overall" Statistical Output
+Separated by Inverted/Upright Viewing Condition and Session Number
+
+```{r, simpleaccinvert, include=FALSE, warning=FALSE}
 Allresp_temp1= invertdf %>%
   group_by(Subject, Session, Direction) %>%
   summarise_at(c("Comparison.ACC", "logRT"), funs)
@@ -159,23 +224,37 @@ Allaccresp_Istats=bind_rows(Allresp_temp1, Allresp_temp2)
 Allaccresp_Istats$Subject=ifelse(is.na(Allaccresp_Istats$Subject), "Overall", 
                                 Allaccresp_Istats$Subject)
 rm(Allresp_temp1, Allresp_temp2)
+```
 
-#print output as  df
-write_tsv(Allaccresp_Istats, file.path(outputdir, "task-invertedfaces_ses-both_acq-accresp_stats-meansd.tsv"))
+## Graph RT only ACC responses
+```{r, include=TRUE, echo=FALSE}
+xyplot(logRT_mean~Session|Subject, 
+       data=Allresp_temp1, 
+       groups=Direction, 
+       h=Allresp_temp1$logRT_mean,
+       auto.key =list(space="right", col=c("blue", "pink"), text=c("Inverse", "Upright")), 
+       main="Response Time by Subject", 
+       ylab = "Response Time",
+       scales=list(alternating=FALSE),
+       panel = function(x, y, h, subscripts, groups) {
+         panel.lmline(x, y, lty=3, lwd=1, col="purple")
+         panel.abline(mean(h), lty=1, col="red")
+         llines(x=x, y=y, type='p', pch=c(23, 21, 23, 21), col=c("blue", "pink"),
+                fill=c("blue", "pink"))
+         #ltext(x = x, y = y,labels = c("G", "L", "G", "L"), cex=1,
+         #fontfamily = "HersheySans", col=c("blue", "pink"))
+       },
+       layout=c(5,1), aspect=5,
+       axis=axis.grid
+)
+```
 
-###############Repeated Measures Anovas and GLMMs
-####RT, all answered Repeated Measures
+# Only Accurate Responses Response Times Anova/GLMMs
+## RT by Invert/Upright
+
+```{r, invertrtaccanova, include=TRUE}
 summary(aov(logRT~Direction+Error(Subject*Session/Direction), data=invertdf))
 #lmer
 summary(lmer(logRT~1+Direction+Session+Direction:Session+(1+Session|Subject), data=invertdf))
 anova(lmer(logRT~1+Direction+Session+Direction:Session+(1+Session|Subject), data=invertdf))
-
-########## ACC Analysis
-###
-###############Repeated Measures Anovas and GLMMs
-####ACC
-summary(aov(Comparison.ACC~Direction+Error(Subject*Session/Direction), data=invertdf))
-#lmer
-summary(lmer(Comparison.ACC~1+Direction+Session+Direction:Session+(1+Session|Subject), data=invertdf))
-anova(lmer(Comparison.ACC~1+Direction+Session+Direction:Session+(1+Session|Subject), data=invertdf))
-
+```

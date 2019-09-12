@@ -123,6 +123,91 @@ summary(aov(logRT~TargetLocation+Error(Subject*Session/TargetLocation), data=nav
 summary(lmer(logRT~1+TargetLocation+Session+TargetLocation:Session+(1+Session|Subject), data=navondf)) 
 anova(lmer(logRT~1+TargetLocation+Session+TargetLocation:Session+(1+Session|Subject), data=navondf))
 
+##Graph All Answered Questions
+##RT, Switch
+xyplot(logRT_mean~Session|Subject, 
+       data=Allresp_switch_temp1, 
+       groups=Switch, 
+       h=Allresp_switch_temp1$logRT_mean,
+       auto.key =list(space="right", col=c("blue", "pink")), 
+       main="Response Time by Subject", 
+       ylab = "Response Time",
+       scales=list(alternating=FALSE),
+       panel = function(x, y, h, subscripts, groups) {
+         panel.lmline(x, y, lty=3, lwd=1, col="purple")
+         panel.abline(mean(h), lty=1, col="red")
+         llines(x=x, y=y, type='p', pch=c(23, 21,23, 21), col=c("blue", "pink", "blue", "pink"),
+                fill=c("blue", "pink", "blue", "pink"))
+         #ltext(x = x, y = y,labels = c("G", "L", "G", "L"), cex=1,
+         #fontfamily = "HersheySans", col=c("blue", "pink", "blue", "pink"))
+       },
+       layout=c(5,1), aspect=5,
+       axis=axis.grid
+)
+
+##ACC, Switch
+xyplot(Stimuli.ACC_mean~Session|Subject, 
+       data=Allresp_switch_temp1, 
+       groups=Switch, 
+       h=Allresp_switch_temp1$logRT_mean,
+       auto.key =list(space="right", col=c("blue", "pink")), 
+       main="Accuracy by Subject", 
+       ylab = "Accuracy",
+       scales=list(alternating=FALSE),
+       panel = function(x, y, h, subscripts, groups) {
+         panel.lmline(x, y, lty=3, lwd=1, col="purple")
+         panel.abline(mean(h), lty=1, col="red")
+         llines(x=x, y=y, type='p', pch=c(23, 21,23, 21), col=c("blue", "pink", "blue", "pink"),
+                fill=c("blue", "pink", "blue", "pink"))
+         #ltext(x = x, y = y,labels = c("G", "L", "G", "L"), cex=1,
+         #fontfamily = "HersheySans", col=c("blue", "pink", "blue", "pink"))
+       },
+       layout=c(5,1), aspect=5,
+       axis=axis.grid
+)
+
+##RT, Target Location
+xyplot(logRT_mean~Session|Subject, 
+       data=Allresp_localglobal_temp1, 
+       groups=TargetLocation, 
+       h=Allresp_switch_temp1$logRT_mean,
+       auto.key =list(space="right", col=c("blue", "pink")), 
+       main="Response Time by Subject", 
+       ylab = "Response Time",
+       scales=list(alternating=FALSE),
+       panel = function(x, y, h, subscripts, groups) {
+         panel.lmline(x, y, lty=3, lwd=1, col="purple")
+         panel.abline(mean(h), lty=1, col="red")
+         llines(x=x, y=y, type='p', pch=c(23, 21,23, 21), col=c("blue", "pink", "blue", "pink"),
+                fill=c("blue", "pink", "blue", "pink"))
+         #ltext(x = x, y = y,labels = c("G", "L", "G", "L"), cex=1,
+         #fontfamily = "HersheySans", col=c("blue", "pink", "blue", "pink"))
+       },
+       layout=c(5,1), aspect=5,
+       axis=axis.grid
+)
+
+##ACC, Target Location
+xyplot(Stimuli.ACC_mean~Session|Subject, 
+       data=Allresp_localglobal_temp1, 
+       groups=TargetLocation, 
+       h=Allresp_switch_temp1$logRT_mean,
+       auto.key =list(space="right", col=c("blue", "pink")), 
+       main="Accuracy by Subject", 
+       ylab = "Accuracy Time",
+       scales=list(alternating=FALSE),
+       panel = function(x, y, h, subscripts, groups) {
+         panel.lmline(x, y, lty=3, lwd=1, col="purple")
+         panel.abline(mean(h), lty=1, col="red")
+         llines(x=x, y=y, type='p', pch=c(23, 21,23, 21), col=c("blue", "pink", "blue", "pink"),
+                fill=c("blue", "pink", "blue", "pink"))
+         #ltext(x = x, y = y,labels = c("G", "L", "G", "L"), cex=1,
+         #fontfamily = "HersheySans", col=c("blue", "pink", "blue", "pink"))
+       },
+       layout=c(5,1), aspect=5,
+       axis=axis.grid
+)
+
 ##########RT ANALYSIS only ACC answers
 #recode ACC=0 as RT=NA 
 sum(is.na(navondf$logRT))
@@ -204,4 +289,48 @@ summary(aov(Stimuli.ACC~TargetLocation+Error(Subject*Session/TargetLocation), da
 #lmer
 summary(lmer(Stimuli.ACC~1+TargetLocation+Session+TargetLocation:Session+(1+Session|Subject), data=navondf)) 
 anova(lmer(Stimuli.ACC~1+TargetLocation+Session+TargetLocation:Session+(1+Session|Subject), data=navondf))
+
+##Graph All Answered Questions
+##RT, Switch
+xyplot(logRT_mean~Session|Subject, 
+       data=Allresp_switch_temp1, 
+       groups=Switch, 
+       h=Allresp_switch_temp1$logRT_mean,
+       auto.key =list(space="right", col=c("blue", "pink")), 
+       main="Response Time by Subject", 
+       ylab = "Response Time",
+       scales=list(alternating=FALSE),
+       panel = function(x, y, h, subscripts, groups) {
+         panel.lmline(x, y, lty=3, lwd=1, col="purple")
+         panel.abline(mean(h), lty=1, col="red")
+         llines(x=x, y=y, type='p', pch=c(23, 21,23, 21), col=c("blue", "pink", "blue", "pink"),
+                fill=c("blue", "pink", "blue", "pink"))
+         #ltext(x = x, y = y,labels = c("G", "L", "G", "L"), cex=1,
+         #fontfamily = "HersheySans", col=c("blue", "pink", "blue", "pink"))
+       },
+       layout=c(5,1), aspect=5,
+       axis=axis.grid
+)
+
+
+##RT, Target Location
+xyplot(logRT_mean~Session|Subject, 
+       data=Allresp_localglobal_temp1, 
+       groups=TargetLocation, 
+       h=Allresp_switch_temp1$logRT_mean,
+       auto.key =list(space="right", col=c("blue", "pink")), 
+       main="Response Time by Subject", 
+       ylab = "Response Time",
+       scales=list(alternating=FALSE),
+       panel = function(x, y, h, subscripts, groups) {
+         panel.lmline(x, y, lty=3, lwd=1, col="purple")
+         panel.abline(mean(h), lty=1, col="red")
+         llines(x=x, y=y, type='p', pch=c(23, 21,23, 21), col=c("blue", "pink", "blue", "pink"),
+                fill=c("blue", "pink", "blue", "pink"))
+         #ltext(x = x, y = y,labels = c("G", "L", "G", "L"), cex=1,
+         #fontfamily = "HersheySans", col=c("blue", "pink", "blue", "pink"))
+       },
+       layout=c(5,1), aspect=5,
+       axis=axis.grid
+)
 

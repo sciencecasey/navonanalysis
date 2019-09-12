@@ -1,16 +1,17 @@
 #######Created for Analyzing Enotional Valence data over 2 sessions 
-#for 2019 VM Pilot study, Fast Face Intervention
-##Casey 08/14/2019
+#for 2019 VM Pilot study, Attention Modulation
+##Casey 09/11/2019
 
 ##Import Data
-inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/fast'
-files=list.files(path='/Users/casey/Desktop/navonanalysis-master/data/source/fast',
+inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/attmod'
+files=list.files(path='/Users/casey/Desktop/navonanalysis-master/data/source/attmod',
                  pattern="*emoval(.*)csv$", recursive = T, full.names = TRUE)
 emolist=lapply(files, read.csv)
 emodf=do.call(rbind, emolist)
 str(emodf)
-outputdir='/Users/casey/Desktop/navonanalysis-master/data/derivatives/fast'
-numsubs=5 #total number subjects
+outputdir='//Users/casey/Desktop/navonanalysis-master/data/derivatives/attmod'
+rawdir='//Users/casey/Desktop/navonanalysis-master/data/raw/attmod'
+numsubs=3 #total number subjects
 numses=2 #total number of sessions
 
 #subset, select, and factor relevant portions
@@ -31,7 +32,7 @@ library(lubridate)
 emodf$Time=ms(emodf$Video.Time)
 
 #export as large tsv
-write_tsv(emodf, file.path(outputdir, "task-emoval_ses-both_beh.tsv"))
+write_tsv(emodf, file.path(rawdir, "task-emoval_ses-both_acq-alltime_physio.tsv"))
 
 #######Looking at the entire session
 
@@ -47,7 +48,7 @@ temp2=emodf %>%
   summarise_at("Valence", funs)
 Alltime_Estats=bind_rows(temp1, temp2)
 Alltime_Estats$Sub=ifelse(is.na(Alltime_Estats$Sub), "Overall", 
-                              Alltime_Estats$Sub)
+                          Alltime_Estats$Sub)
 rm(temp2)
 
 #print output as df
@@ -62,10 +63,11 @@ cohensD(mean~Session, data=temp1)
 
 summary(lmer(Valence~Session+(1+Session|Sub), data=emodf))
 #summary(aov(Valence~Session+Error(Sub/Session), data=emodf)) (checking it's same, can't tell but should be?)
-
 #Plot
+
 xyplot(mean~Session, temp1, groups = Sub, type=c('p','l'),
        par.settings=ggplot2like(),axis=axis.grid, auto.key = TRUE, main="Average Valence by Subject", ylab="Average Valence") 
+
 
 #######Looking at only natural faces (no fixation, instructions, pauses, scrambles)
 #Select only the times of interest
@@ -93,7 +95,7 @@ temp4=emofilt %>%
   summarise_at("Valence", funs)
 Alltime_Eselectstats=bind_rows(temp3, temp4)
 Alltime_Eselectstats$Sub=ifelse(is.na(Alltime_Eselectstats$Sub), "Overall", 
-                          Alltime_Eselectstats$Sub)
+                                Alltime_Eselectstats$Sub)
 rm(temp4)
 
 #print output as df
