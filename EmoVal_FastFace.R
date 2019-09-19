@@ -53,7 +53,6 @@ rm(temp2)
 #print output as df
 write_tsv(Alltime_Estats, file.path(outputdir, "task-emoval_ses-both_acq-alltime_stats-meansd.tsv"))
 
-
 ##T Test and GLMM
 t.test(mean~Session, alternative="less", data=temp1, na.rm=TRUE,
        paired=TRUE)
@@ -65,7 +64,8 @@ summary(lmer(Valence~Session+(1+Session|Sub), data=emodf))
 
 #Plot
 xyplot(mean~Session, temp1, groups = Sub, type=c('p','l'),
-       par.settings=ggplot2like(),axis=axis.grid, auto.key = TRUE, main="Average Valence by Subject", ylab="Average Valence") 
+       par.settings=ggplot2like(),axis=axis.grid, auto.key = TRUE, 
+       main="Average Valence by Subject", ylab="Average Valence") 
 
 #######Looking at only natural faces (no fixation, instructions, pauses, scrambles)
 #Select only the times of interest
@@ -85,19 +85,19 @@ emofilt=subset(emodf, select=c(Sub, Session, Time, Valence))
 emofilt=filter(emofilt, Time>=seg1start & Time<=seg1end | Time>=seg2start & Time<=seg2end | Time>=seg3start & Time<=seg3end)
 
 ##Simple Statistics
-temp3= emofilt %>%
-  group_by(Sub, Session) %>%
+ttemp3= emofilt %>%
+  group_by(Sub, group) %>%
   summarise_at("Valence", funs)
 temp4=emofilt %>%
-  group_by(Session) %>%
+  group_by(group) %>%
   summarise_at("Valence", funs)
-Alltime_Eselectstats=bind_rows(temp3, temp4)
-Alltime_Eselectstats$Sub=ifelse(is.na(Alltime_Eselectstats$Sub), "Overall", 
-                          Alltime_Eselectstats$Sub)
+Selecttime_Eselectstats=bind_rows(temp3, temp4)
+Selecttime_Eselectstats$Sub=ifelse(is.na(Selecttime_Eselectstats$Sub), "Overall", 
+                                   Selecttime_Eselectstats$Sub)
 rm(temp4)
 
 #print output as df
-write_tsv(Alltime_Eselectstats, file.path(outputdir, "task-emoval_ses-both_acq-alltime_stats-meansd.tsv"))
+write_tsv(Selecttime_Eselectstats, file.path(outputdir, "task-emoval_ses-both_acq-selecttime_stats-meansd.tsv"))
 
 
 ##T Test and GLMM
@@ -110,4 +110,5 @@ summary(lmer(Valence~Session+(1+Session|Sub), data=emodfilt))
 
 #Plot
 xyplot(mean~Session, temp3, groups = Sub, type=c('p','l'),
-       par.settings=ggplot2like(),axis=axis.grid, auto.key = TRUE, main="Average Valence by Subject", ylab="Average Valence") 
+       par.settings=ggplot2like(),axis=axis.grid, auto.key = TRUE, 
+       main="Average Valence by Subject", ylab="Average Valence") 
