@@ -1,0 +1,67 @@
+---
+title: "POMs README"
+author: "Casey Jayne"
+date: "9/25/2019"
+output: 
+  html_document:
+    df_print: paged
+    toc: TRUE
+---
+
+# POMS Modified Scoring
+
+Referenced from \
+<https://www.brianmac.co.uk/pomscoring.htm> \
+<https://www.researchgate.net/publication/299823508> 
+
+### Showing the modifications from Orginal
+
+### Guide to meanings within lists
+
++ items in a list that are ~~stricken through~~ were included in either POMS short or POMs 1972 version and were not used in our current form.
++ items in a list that are in *italics* were added to the calculation (without instruction to do so from another form).
++ items in a list that are **bold** were reverse scored (0=4, 1=3, 2=2).
+
+**Total Mood Disturbance**
+
+A Total Mood Disturbance (TMD) can be calculated by adding the scores for Tension, Depression, Anger, Fatigue and Confusion and then subtracting the score for Vigour. 
+- note, there is another score called "Esteem-Related Affect" that was not used in our calculations
+
+
+__Tension__ 
+
+* Tense, Shaky, On Edge, Panicky, **Relaxed**, Uneasy, Restless, Nervous, Anxious
+
+__Depression__ 
+
+* Unhappy, ~~Sorry for Things Done~~, Sad, ~~Blue~~, Hopeless, Unworthy, Discouraged, Lonely, Miserable, Gloomy, Desperate, Helpless, Worthless, ~~Terrified~~, Guilty, *Regretful*
+
+__Anger__ 
+
+* Anger, ~~Peeved~~, Grouchy, Spiteful, Annoyed, Resentful, Bitter, Ready to Fight, Rebellious, Deceived, Furious, Bad Tempered
+
+__Fatigue__ 
+
+* Worn Out, ~~Listless~~, Fatigued, Exhausted, Sluggish, Weary, ~~Bushed~~, *Drained*
+
+__Confusion__ 
+
+* Confused, Unable to Concentrate, Muddled, Bewildered, **Efficient**, Forgetful, Uncertain About Things, *Disorganized*
+
+__Vigour__ 
+
+* Lively, Active, Energetic, ~~Cheerful~~, Alert, ~~Full of Pep~~, Carefree, Vigorous, *Enthusiastic*
+
+__Dummy__ (unused in calculations) 
+
+* Friendly, Clear Headed, Considerate, Sympathetic, Helpful, Good Natured, Trusting, *Dynamic, Gentle, Stressed*
+
+
+
+
+
+
+
+
+
+

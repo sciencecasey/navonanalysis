@@ -2,7 +2,7 @@
 #for 2019 VM Pilot study, Attention Modulation Intervention
 ##Casey 09/10/2019
 
-####################DATA CLEANING ########################################
+
 #import all IF files as a DF
 inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/attmod'
 files=list.files(path='/Users/casey/Desktop/navonanalysis-master/data/source/attmod',
@@ -14,13 +14,7 @@ outputdir='/Users/casey/Desktop/navonanalysis-master/data/derivatives/attmod'
 numsubs=3 #total number subjects
 numses=2 #total number of sessions
 
-#dataset specific!
-#some of the data is saved as Inv some and Inverse, change all to Inv
-invertdf$Direction[invertdf$Direction=="Inverse"]="Inv"
-#some subjects saved without 2 at the end for time 2
-invertdf$Subject[invertdf$Subject=="5031"]="50312"
-invertdf$Subject[invertdf$Subject=="5020"]="50202"
-
+####################DATA CLEANING ########################################
 #subset only the LONG trials
 invertdf=subset(invertdf, Time=='l')
 invertdf[["Time"]] #just checking
@@ -28,7 +22,7 @@ invertdf[["Time"]] #just checking
 #add task column
 invertdf$task=rep("invertedfaces", length(invertdf$Subject))
 #add intervention column
-invertdf$intervention=rep("fastface", length(invertdf$Subject))
+invertdf$intervention=rep("attmod", length(invertdf$Subject))
 #add Trial counter Column for only the long
 invertdf$trial=factor(rep(seq(1, length(navondf$Session)/(numsubs*numses)), numsubs))
 
@@ -84,6 +78,49 @@ rm(Allresp_temp1, Allresp_temp2)
 #print output as df
 write_tsv(Allresp_Istats, file.path(outputdir, "task-invertedfaces_ses-both_acq-allresp_stats-meansd.tsv"))
 
+#Graphs
+#RT
+xyplot(logRT_mean~Session|Subject, 
+       data=Allresp_temp1, 
+       groups=Direction, 
+       h=Allresp_temp1$logRT_mean,
+       auto.key =list(space="right", col=c("blue", "pink"), text=c("Inverse", "Upright")), 
+       main="Response Time by Subject", 
+       ylab = "Response Time",
+       scales=list(alternating=FALSE),
+       panel = function(x, y, h, subscripts, groups) {
+         panel.lmline(x, y, lty=3, lwd=1, col="purple")
+         panel.abline(mean(h), lty=1, col="red")
+         llines(x=x, y=y, type='p', pch=c(23, 21, 23, 21), col=c("blue", "pink"),
+                fill=c("blue", "pink"))
+         #ltext(x = x, y = y,labels = c("G", "L", "G", "L"), cex=1,
+         #fontfamily = "HersheySans", col=c("blue", "pink"))
+       },
+       layout=c(5,1), aspect=5,
+       axis=axis.grid
+)
+
+#ACC
+xyplot(Comparison.ACC_mean~Session|Subject, 
+       data=Allresp_temp1, 
+       groups=Direction, 
+       h=Allresp_temp1$Comparison.ACC_mean,
+       auto.key =list(space="right", col=c("blue", "pink"), text=c("Inverse", "Upright")), 
+       main="Accuracy by Subject", 
+       ylab = "Accuracy",
+       scales=list(alternating=FALSE),
+       panel = function(x, y, h, subscripts, groups) {
+         panel.lmline(x, y, lty=3, lwd=1, col="purple")
+         panel.abline(mean(h), lty=1, col="red")
+         llines(x=x, y=y, type='p', pch=c(23, 21, 23, 21), col=c("blue", "pink"),
+                fill=c("blue", "pink"))
+         #ltext(x = x, y = y,labels = c("G", "L", "G", "L"), cex=1,
+         #fontfamily = "HersheySans", col=c("blue", "pink"))
+       },
+       layout=c(5,1), aspect=5,
+       axis=axis.grid
+)
+
 ###############Repeated Measures Anovas and GLMMs
 ####RT, all answered Repeated Measures
 summary(aov(logRT~Direction+Error(Subject*Session/Direction), data=invertdf))
@@ -106,19 +143,41 @@ ifelse (q!=w,
         glue('RT coded only for correct responses'))
 
 ###Simple Statistics
-Allresp_temp1= invertdf %>%
+Allaccresp_temp1= invertdf %>%
   group_by(Subject, Session, Direction) %>%
   summarise_at(c("Comparison.ACC", "logRT"), funs)
-Allresp_temp2=invertdf %>%
+Allaccresp_temp2=invertdf %>%
   group_by(Session, Direction) %>%
   summarise_at(c("Comparison.ACC", "logRT"), funs)
-Allaccresp_Istats=bind_rows(Allresp_temp1, Allresp_temp2)
+Allaccresp_Istats=bind_rows(Allaccresp_temp1, Allaccresp_temp2)
 Allaccresp_Istats$Subject=ifelse(is.na(Allaccresp_Istats$Subject), "Overall", 
                                  Allaccresp_Istats$Subject)
-rm(Allresp_temp1, Allresp_temp2)
+#rm(Allaccresp_temp1, Allaccresp_temp2)
 
 #print output as  df
 write_tsv(Allaccresp_Istats, file.path(outputdir, "task-invertedfaces_ses-both_acq-accresp_stats-meansd.tsv"))
+
+#Graphs
+#RT, only accurate
+xyplot(logRT_mean~Session|Subject, 
+       data=Allaccresp_temp1, 
+       groups=Direction, 
+       h=Allaccresp_temp1$logRT_mean,
+       auto.key =list(space="right", col=c("blue", "pink"), text=c("Inverse", "Upright")), 
+       main="Response Time by Subject", 
+       ylab = "Response Time",
+       scales=list(alternating=FALSE),
+       panel = function(x, y, h, subscripts, groups) {
+         panel.lmline(x, y, lty=3, lwd=1, col="purple")
+         panel.abline(mean(h), lty=1, col="red")
+         llines(x=x, y=y, type='p', pch=c(23, 21, 23, 21), col=c("blue", "pink"),
+                fill=c("blue", "pink"))
+         #ltext(x = x, y = y,labels = c("G", "L", "G", "L"), cex=1,
+         #fontfamily = "HersheySans", col=c("blue", "pink"))
+       },
+       layout=c(5,1), aspect=5,
+       axis=axis.grid
+)
 
 ###############Repeated Measures Anovas and GLMMs
 ####RT, all answered Repeated Measures

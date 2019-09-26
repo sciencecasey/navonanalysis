@@ -1,5 +1,5 @@
 ---
-title: "Inverted_AttenMod"
+title: "Inverted Faces Analysis, Attenion Modulation"
 author: "Casey Jayne"
 date: "9/11/2019"
 output: 
@@ -31,11 +31,10 @@ library(glue)
 library(readr)
 ```
 
-R Markdown, Statistical Analysis for Navon/Inverted faces Pilot Study, Fast Face Intervention 
+R Markdown, Statistical Analysis for Navon/Inverted faces Pilot Study, Attention Modulation Intervention 
  Feusner 2019
 
 ```{r dataimport, include=FALSE}
-####################DATA CLEANING ########################################
 #import all IF files as a DF
 inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/attmod'
 files=list.files(path='/Users/casey/Desktop/navonanalysis-master/data/source/attmod',
@@ -47,13 +46,7 @@ outputdir='/Users/casey/Desktop/navonanalysis-master/data/derivatives/attmod'
 numsubs=3 #total number subjects
 numses=2 #total number of sessions
 
-#dataset specific!
-#some of the data is saved as Inv some and Inverse, change all to Inv
-invertdf$Direction[invertdf$Direction=="Inverse"]="Inv"
-#some subjects saved without 2 at the end for time 2
-invertdf$Subject[invertdf$Subject=="5031"]="50312"
-invertdf$Subject[invertdf$Subject=="5020"]="50202"
-
+####################DATA CLEANING ########################################
 #subset only the LONG trials
 invertdf=subset(invertdf, Time=='l')
 invertdf[["Time"]] #just checking
@@ -61,9 +54,9 @@ invertdf[["Time"]] #just checking
 #add task column
 invertdf$task=rep("invertedfaces", length(invertdf$Subject))
 #add intervention column
-invertdf$intervention=rep("fastface", length(invertdf$Subject))
+invertdf$intervention=rep("attmod", length(invertdf$Subject))
 #add Trial counter Column for only the long
-invertdf$trial=factor(rep(seq(1, length(navondf$Session)/(numsubs*numses)), numsubs))
+invertdf$trial=factor(rep(seq(1, length(invertdf$Session)/(numsubs*numses)), numsubs))
 
 #subset, select, and factor relevant portions
 #using the subsetted trial counter rather than original
@@ -72,7 +65,7 @@ invertdf=subset(invertdf, select=c(Subject, Session, task, intervention, trial, 
 invertdf=within(invertdf, {
   Subject=factor(Subject)
   Session=factor(Session)
-  Trial=factor(Trial)
+  trial=factor(trial)
   task=factor(task)})
 str(invertdf)
 
@@ -148,6 +141,8 @@ anova(lmer(Comparison.ACC~1+Direction+Session+Direction:Session+(1+Session|Subje
 ## Graphs, only Accurate RTs
 
 ```{r, include=TRUE, echo=FALSE}
+#Graphs
+#RT
 xyplot(logRT_mean~Session|Subject, 
        data=Allresp_temp1, 
        groups=Direction, 
@@ -171,6 +166,7 @@ xyplot(logRT_mean~Session|Subject,
 
 ### ACC
 ```{r, include=TRUE, echo=FALSE}
+#ACC
 xyplot(Comparison.ACC_mean~Session|Subject, 
        data=Allresp_temp1, 
        groups=Direction, 
@@ -188,7 +184,8 @@ xyplot(Comparison.ACC_mean~Session|Subject,
          #fontfamily = "HersheySans", col=c("blue", "pink"))
        },
        layout=c(5,1), aspect=5,
-       axis=axis.grid)
+       axis=axis.grid
+)
 ```
 
 # Simple Stats including only ACC answers for RT
@@ -214,24 +211,26 @@ Create a DataFrame include an "Overall" Statistical Output
 Separated by Inverted/Upright Viewing Condition and Session Number
 
 ```{r, simpleaccinvert, include=FALSE, warning=FALSE}
-Allresp_temp1= invertdf %>%
+###Simple Statistics
+Allaccresp_temp1= invertdf %>%
   group_by(Subject, Session, Direction) %>%
   summarise_at(c("Comparison.ACC", "logRT"), funs)
-Allresp_temp2=invertdf %>%
+Allaccresp_temp2=invertdf %>%
   group_by(Session, Direction) %>%
   summarise_at(c("Comparison.ACC", "logRT"), funs)
-Allaccresp_Istats=bind_rows(Allresp_temp1, Allresp_temp2)
+Allaccresp_Istats=bind_rows(Allaccresp_temp1, Allaccresp_temp2)
 Allaccresp_Istats$Subject=ifelse(is.na(Allaccresp_Istats$Subject), "Overall", 
-                                Allaccresp_Istats$Subject)
-rm(Allresp_temp1, Allresp_temp2)
+                                 Allaccresp_Istats$Subject)
+#rm(Allaccresp_temp1, Allaccresp_temp2)
 ```
 
 ## Graph RT only ACC responses
 ```{r, include=TRUE, echo=FALSE}
+#RT, only accurate
 xyplot(logRT_mean~Session|Subject, 
-       data=Allresp_temp1, 
+       data=Allaccresp_temp1, 
        groups=Direction, 
-       h=Allresp_temp1$logRT_mean,
+       h=Allaccresp_temp1$logRT_mean,
        auto.key =list(space="right", col=c("blue", "pink"), text=c("Inverse", "Upright")), 
        main="Response Time by Subject", 
        ylab = "Response Time",
