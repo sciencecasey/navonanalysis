@@ -1,0 +1,150 @@
+---
+title: "BABs, Biss, Stai, Fast Face"
+author: "Casey Jayne"
+date: "9/12/2019"
+output: 
+  html_document:
+    df_print: paged
+    toc: TRUE
+---
+
+```{r libs, include=FALSE}
+require("ggplot2")
+#require(GGally)
+require(reshape2)
+require(lme4)
+require(lattice)
+require(dplyr)
+require(tidyverse)
+require("haven")
+require(lsr)
+require(plyr)
+require(car)
+#require(fitdistrplus)
+#require(multcomp)
+#library(lmerTest)
+library(latticeExtra)  
+library(markdown)
+library(knitr)
+require(lubridate)
+library(glue)
+library(readr)
+```
+
+R Markdown, Statistical Analysis for Navon/Inverted faces Pilot Study, Fast Face Intervention 
+ Feusner 2019
+
+```{r dataimport, include=FALSE}
+##Import Data
+inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/fast'
+bbsdf=read.csv('/Users/casey/Desktop/navonanalysis-master/data/source/fast/BABS-BISS-STAI-formatted.csv')
+str(bbsdf)
+outputdir='/Users/casey/Desktop/navonanalysis-master/data/derivatives/fast'
+numsubs=5 #total number subjects
+numses=2 #total number of sessions
+
+#Interested in "babs_total", "biss_total_score_day1", "biss_total_score_beforescan1", "stai_total_score"
+#"stai_total_score_v2", "stai_total_score_t2", "stai_total_score_v2_t2", "stai_total_score_t3"
+#"stai_total_score_v2_t3", "biss_total_score_v2"
+BBS2=subset(bbsdf, select = c(subject_id, babs_total, biss_total_score_day1, stai_total_score, 
+                            stai_total_score_v2, stai_total_score_t2, stai_total_score_v2_t2,
+                            stai_total_score_t3, stai_total_score_v2_t3, biss_total_score_v2))
+str(BBS2)
+#BISS T4-T1
+BBS2$BissDifference=(BBS2$biss_total_score_v2-BBS2$biss_total_score_day1)
+(BBS2$BissDifference)
+(mean(BBS2$BissDifference))
+#STAI T3V2-T1V1
+(BBS2$StaiWidestDifference=BBS2$stai_total_score_v2_t3-BBS2$stai_total_score)
+(mean(BBS2$StaiWidestDifference))
+#Stai Each Diff by day
+BBS2$StaiDiffDay1=BBS2$stai_total_score_v2-BBS2$stai_total_score 
+BBS2$StaiDiffDay2=BBS2$stai_total_score_v2_t2-BBS2$stai_total_score_t2 
+BBS2$StaiDiffDay3=BBS2$stai_total_score_v2_t3-BBS2$stai_total_score_t3 
+```
+
+# Difference Table
+```{r, difftab, include=FALSE, echo=FALSE}
+#Descriptives
+Overall=c("Overall", mean(BBS2$BissDifference), mean(BBS2$StaiWidestDifference), mean(BBS2$StaiDiffDay1),
+          mean(BBS2$StaiDiffDay2), mean(BBS2$StaiDiffDay3))
+BBSDesc=subset(BBS2, select=c(subject_id, BissDifference, StaiWidestDifference, StaiDiffDay1, StaiDiffDay2,
+                              StaiDiffDay3))
+BBSDesc=rbind(BBSDesc, Overall)
+BBSDesc$subject_id=ifelse(is.na(BBSDesc$subject_id), "Overall", BBSDesc$subject_id)
+```
+```{r,include=TRUE}
+BBSDesc
+```
+
+# Stai V2-V1 Anova
+```{r, staianova, include=FALSE}
+library(ez)
+Stai=c(BBS2$StaiDiffDay1, BBS2$StaiDiffDay2, BBS2$StaiDiffDay3)
+Staidf=tibble(subject_id=rep(BBS2$subject_id, 3), Stai=Stai, Day=rep(seq(1,3), each=numsubs))
+str(Staidf)
+Staidf$Day=factor(Staidf$Day)
+#summary(lmer(Stai~Day+(1+Day|subject_id), data=Staidf))
+modelStai=ezANOVA(dv=Stai, within=Day, wid=subject_id, data=Staidf, return_aov = TRUE)
+modelStai$Mauchly #fits model
+modelStai$ANOVA #significant result according to the F Value but not p value
+#doublechecked outputs with socscistatists.com/tests
+#GES is the genearlized effect size
+#model2Stai=aov(Stai~Day+Error(subject_id/Day), data=Staidf)
+```
+```{r, include=TRUE}
+modelStai
+```
+
+# Post hoc t tests on Stai Difference Scores (Post-Pre)
+Day 2- Day 1 p value
+```{r, ttest, echo=FALSE}
+t2.t1=t.test(BBS2$StaiDiffDay2, BBS2$StaiDiffDay1, paired=TRUE)
+p.adjust(t2.t1$p.value, method = "holm")
+```
+Day 3- Day 2 p value
+```{r, ttest2, echo=FALSE}
+t3.t2=t.test(BBS2$StaiDiffDay3, BBS2$StaiDiffDay2, paired=TRUE)
+p.adjust(t3.t2$p.value, method = "holm")
+```
+Day 3 -Day 1, p value
+```{r, ttest3, include=TRUE, echo=FALSE}
+t3.t1=t.test(BBS2$StaiDiffDay3, BBS2$StaiDiffDay1, paired=TRUE)
+p.adjust(t3.t1$p.value, method = "holm")
+```
+
+# Graphs
+## Each person, over time
+```{r, include=FALSE}
+#make new df with Time, Biss and Stai
+forms=c(BBS2$biss_total_score_day1, BBS2$biss_total_score_v2, BBS2$stai_total_score, 
+        BBS2$stai_total_score_v2, BBS2$stai_total_score_t2, BBS2$stai_total_score_v2_t2, 
+        BBS2$stai_total_score_t3, BBS2$stai_total_score_v2_t3)
+time=rep(c(1,5,1,2,3,4,5,6),each= numsubs)
+sub=rep(BBS2$subject_id, 8)
+test=c(rep("Biss", 2*numsubs), rep("Stai", 6*numsubs))
+BBSlong=tibble("Subject"=sub, "Task"=test, "Score"=forms, "Timepoint"=time)
+str(BBSlong)
+BBSlong$Task=factor(BBSlong$Task)
+BBSlong$Timepoint=factor(BBSlong$Timepoint)
+str(BBSlong)
+```
+```{r, include=TRUE, echo=FALSE}
+#plot each person's Responses Over time
+xyplot(Score~Timepoint, groups=Task, subset=Subject=="5014_2", data=BBSlong, type=c('l', 'p'), main="Subject1 Responses", auto.key = list(space="top"), axis=axis.grid)
+xyplot(Score~Timepoint, groups=Task, subset=Subject=="5019_2", data=BBSlong, type=c('l', 'p'), main="Subject2 Responses", auto.key = list(space="top"), axis=axis.grid)
+xyplot(Score~Timepoint, groups=Task, subset=Subject=="5020_2", data=BBSlong, type=c('l', 'p'), main="Subject3 Responses", auto.key = list(space="top"), axis=axis.grid)
+xyplot(Score~Timepoint, groups=Task, subset=Subject=="5026_2", data=BBSlong, type=c('l', 'p'), main="Subject4 Responses", auto.key = list(space="top"), axis=axis.grid)
+xyplot(Score~Timepoint, groups=Task, subset=Subject=="5031_2", data=BBSlong, type=c('l', 'p'), main="Subject5 Responses", auto.key = list(space="top"), axis=axis.grid)
+xyplot(Score~Timepoint|Subject, groups=c(Task), layout=c(5,1), aspect=2, data=BBSlong, scales=list(alternating=FALSE), axis=axis.grid, type=c('l', 'p'), main="Subject Responses, Biss and Stai", auto.key = list(space="top"))
+```
+
+
+## Plot Only Time 1 and 5
+```{r, include=TRUE, echo=FALSE}
+xyplot(Score~Timepoint, groups=c(Subject, Task), subset=(Timepoint==1| Timepoint==5) , data=BBSlong, type='p', pch=25, cex=1.5, main="Subject Responses", auto.key = list(space="top"))
+
+BBSfilt=filter(BBSlong, Timepoint=="1"| Timepoint=="5")
+xyplot(Score~Timepoint|Task, groups=c(Subject), data=BBSfilt, type=c('l', 'p'), main="First and Last Day", 
+       auto.key = list(space="top"), scales=list(alternating=FALSE), axis=axis.grid, layout=c(2,1))
+```
