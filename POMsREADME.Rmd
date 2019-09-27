@@ -30,7 +30,7 @@ A Total Mood Disturbance (TMD) can be calculated by adding the scores for Tensio
 
 __Tension__ 
 
-* Tense, Shaky, On Edge, Panicky, **Relaxed**, Uneasy, Restless, Nervous, Anxious
+* Tense, Shaky, On Edge, Panicky, **Relaxed**, Uneasy, Restless, Nervous, Anxious, *Stressed*
 
 __Depression__ 
 
@@ -54,7 +54,7 @@ __Vigour__
 
 __Dummy__ (unused in calculations) 
 
-* Friendly, Clear Headed, Considerate, Sympathetic, Helpful, Good Natured, Trusting, *Dynamic, Gentle, Stressed*
+* Friendly, Clear Headed, Considerate, Sympathetic, Helpful, Good Natured, Trusting, *Dynamic, Gentle*
 
 
 
