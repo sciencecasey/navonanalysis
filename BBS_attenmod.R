@@ -237,6 +237,34 @@ POMS$TMDWidestDiff=POMS$TMD3.2-POMS$TMD1.1
 #write as TSV
 write_tsv(POMS, file.path(outputdir, "task-poms_all.tsv"))
 
+#Print a Dataframe with each poms score
+temp1=subset(POMS, select = c(tenscore1.1, tenscore1.2, tenscore2.1, tenscore2.2, tenscore3.1,
+                              tenscore3.2, depscore1.1, depscore1.2, depscore2.1, depscore2.2,
+                              depscore3.1, depscore3.2, angscore1.1, angscore1.2, angscore1.2,
+                              angscore2.1, angscore2.2, angscore3.1, angscore3.2, fatscore1.1,
+                              fatscore1.2, fatscore2.1, fatscore2.2, fatscore3.1, fatscore3.2,
+                              conscore1.1, conscore1.2, conscore2.1, conscore2.2, conscore3.1,
+                              conscore3.2, vigscore1.1, vigscore1.2, vigscore2.1, vigscore2.2,
+                              vigscore3.1, vigscore3.2))
+tenavg=rowMeans(subset(POMS, na.rm=TRUE, select=c(tenscore1.1, tenscore1.2, tenscore2.1, tenscore2.2,
+                                                  tenscore3.1, tenscore3.2)))
+depavg=rowMeans(subset(POMS, na.rm=TRUE, select=c(depscore1.1, depscore1.2, depscore2.1, depscore2.2,
+                                                  depscore3.1, depscore3.2)))
+angavg=rowMeans(subset(POMS, na.rm=TRUE, select=c(angscore1.1, angscore1.2, angscore2.1, angscore2.2,
+                                                  angscore3.1, angscore3.2)))
+fatavg=rowMeans(subset(POMS, na.rm=TRUE, select=c(fatscore1.1, fatscore1.2, fatscore2.1, fatscore2.2,
+                                                  fatscore3.1, fatscore3.2)))
+conavg=rowMeans(subset(POMS, na.rm=TRUE, select=c(conscore1.1, conscore1.2, conscore2.1, conscore2.2,
+                                                  conscore3.1, conscore3.2)))
+vigavg=rowMeans(subset(POMS, na.rm=TRUE, select=c(vigscore1.1, vigscore1.2, vigscore2.1, vigscore2.2,
+                                                  vigscore3.1, vigscore3.2)))
+
+PomsScoresAvgs=cbind(POMS$Sub, "Tension"=tenavg, "Depression"=depavg, "Anger"=angavg, "Fatigue"=fatavg, "Confusion"=conavg, "Vigor"=vigavg, temp1)
+
+#write as TSV
+write_tsv(PomsScoresAvgs, file.path(outputdir, "task-poms_eachtask_averaged.tsv"))
+
+
 #Print Difference DF
 #Descriptives
 POMS$Sub=levels(BBS2$subject_id)

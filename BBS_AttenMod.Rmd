@@ -38,12 +38,12 @@ R Markdown, Statistical Analysis for Navon/Inverted faces Pilot Study, Fast Face
 
 ```{r dataimport, include=FALSE}
 ##Import Data
-inputdir='/Users/casey/Desktop/navonanalysis-master/data/source/attmod'
-bbsdf=read.csv('/Users/casey/Desktop/navonanalysis-master/data/source/attmod/BABS_BISS_STAI_POMS_formatted.csv')
+inputdir='/Users/jamiefeusner/Desktop/cjdesktop/navonanalysis-master/data/source/attmod'
+bbsdf=read.csv('/Users/jamiefeusner/Desktop/cjdesktop/navonanalysis-master/data/source/attmod/BABS_BISS_STAI_POMS_formatted.csv')
 str(bbsdf)
-outputdir='/Users/casey/Desktop/navonanalysis-master/data/derivatives/attmod/'
-rawdir='/Users/casey/Desktop/navonanalysis-master/data/raw/attmod/'
-numsubs=3 #total number subjects
+outputdir='/Users/jamiefeusner/Desktop/cjdesktop/navonanalysis-master/data/derivatives/attmod/'
+rawdir='/Users/jamiefeusner/Desktop/cjdesktop/navonanalysis-master/data/raw/attmod/'
+numsubs=4 #total number subjects
 numses=2 #total number of sessions
 
 #Interested in "babs_total", "biss_total_score_day1", "biss_total_score_beforescan1", "stai_total_score"
@@ -89,6 +89,7 @@ str(Staidf)
 Staidf$Day=factor(Staidf$Day)
 #Remove subID for incomplete days
 Staidf=subset(Staidf, subject_id!="5038_2")
+Staidf=subset(Staidf, subject_id!="5035_2")
 #summary(lmer(Stai~Day+(1+Day|subject_id), data=Staidf))
 modelStai=ezANOVA(dv=Stai, within=Day, wid=subject_id, data=Staidf, return_aov = TRUE)
 modelStai$Mauchly #fits model
@@ -156,6 +157,7 @@ xyplot(Score~Timepoint|Task, groups=c(Subject), data=BBSfilt, type=c('l', 'p'), 
 ##looking at POMs Data
 str(bbsdf)
 BBS3=bbsdf %>% select(starts_with("poms"))
+BBS3$Sub=BBS2$subject_id
 #select tension
 tension<- c('poms_tense', 'poms_shakey', 'poms_edge', 'poms_panicky', 
            'poms_uneasy', 'poms_restless', 
@@ -256,6 +258,7 @@ BBS3$vigscore3.2=BBS3 %>% select(v3a) %>% rowSums()
 
 #put all aggregates into new DF
 POMS=BBS3 %>% select(contains('score'))
+POMS$Sub=BBS3$Sub
 #Make the TMD score
 POMS$TMD1.1<- POMS %>% select(tenscore1.1, depscore1.1, angscore1.1, fatscore1.1, 
                               conscore1.1) %>% rowSums() %>% -POMS$vigscore1.1
@@ -282,15 +285,42 @@ POMS$TMDWidestDiff=POMS$TMD3.2-POMS$TMD1.1
 ```{r, include=TRUE, echo=FALSE, warning=FALSE}
 #Print Difference DF
 #Descriptives
-POMS$Sub=levels(BBS2$subject_id)
 Overall=c("Overall", mean(POMS$TMDWidestDiff, na.rm=TRUE), mean(POMS$TMDDiffDay1, na.rm=TRUE),
           mean(POMS$TMDDiffDay2, na.rm=TRUE), mean(POMS$TMDDiffDay3, na.rm=TRUE))
 POMSDesc=subset(POMS, select=c(Sub, TMDWidestDiff, TMDDiffDay1, TMDDiffDay2, TMDDiffDay3))
 POMSDesc=rbind(POMSDesc, Overall)
+
+#Print a Dataframe with each poms score
+temp1=subset(POMS, select = c(tenscore1.1, tenscore1.2, tenscore2.1, tenscore2.2, tenscore3.1,
+                                      tenscore3.2, depscore1.1, depscore1.2, depscore2.1, depscore2.2,
+                                      depscore3.1, depscore3.2, angscore1.1, angscore1.2, angscore1.2,
+                                      angscore2.1, angscore2.2, angscore3.1, angscore3.2, fatscore1.1,
+                                      fatscore1.2, fatscore2.1, fatscore2.2, fatscore3.1, fatscore3.2,
+                                      conscore1.1, conscore1.2, conscore2.1, conscore2.2, conscore3.1,
+                                      conscore3.2, vigscore1.1, vigscore1.2, vigscore2.1, vigscore2.2,
+                                      vigscore3.1, vigscore3.2))
+tenavg=rowMeans(subset(POMS, na.rm=TRUE, select=c(tenscore1.1, tenscore1.2, tenscore2.1, tenscore2.2,
+                                                  tenscore3.1, tenscore3.2)))
+depavg=rowMeans(subset(POMS, na.rm=TRUE, select=c(depscore1.1, depscore1.2, depscore2.1, depscore2.2,
+                                                  depscore3.1, depscore3.2)))
+angavg=rowMeans(subset(POMS, na.rm=TRUE, select=c(angscore1.1, angscore1.2, angscore2.1, angscore2.2,
+                                                  angscore3.1, angscore3.2)))
+fatavg=rowMeans(subset(POMS, na.rm=TRUE, select=c(fatscore1.1, fatscore1.2, fatscore2.1, fatscore2.2,
+                                                  fatscore3.1, fatscore3.2)))
+conavg=rowMeans(subset(POMS, na.rm=TRUE, select=c(conscore1.1, conscore1.2, conscore2.1, conscore2.2,
+                                                  conscore3.1, conscore3.2)))
+vigavg=rowMeans(subset(POMS, na.rm=TRUE, select=c(vigscore1.1, vigscore1.2, vigscore2.1, vigscore2.2,
+                                                  vigscore3.1, vigscore3.2)))
+
+PomsScoresAvgs=cbind(POMS$Sub, "Tension"=tenavg, "Depression"=depavg, "Anger"=angavg, "Fatigue"=fatavg, "Confusion"=conavg, "Vigor"=vigavg, temp1)
+
 ```
 
-```{r, include=TRUE, echo=TRUE}
+```{r, include=TRUE, echo=FALSE}
 POMSDesc
+cat("\n Averages of each score which makes up the TMD, by subject \n")
+
+print(PomsScoresAvgs)
 ```
 
 ## POMS Anova
@@ -303,6 +333,7 @@ pomdf$Day=factor(pomdf$Day)
 
 #Remove subID for incomplete days
 pomdf=subset(pomdf, subject_id!="5038_2")
+pomdf=subset(pomdf, subject_id!="5035_2")
 ```
 
 ```{r, include=TRUE, warning=FALSE, echo=FALSE}
@@ -338,6 +369,8 @@ xyplot(Score~Timepoint, groups=Task, subset=Subject=="5037_2", data=POMSlong,
        type=c('l', 'p'), main="Subject2 Responses", auto.key = list(space="top"), axis=axis.grid)
 xyplot(Score~Timepoint, groups=Task, subset=Subject=="5038_2", data=POMSlong, 
        type=c('l', 'p'), main="Subject3 Responses", auto.key = list(space="top"), axis=axis.grid)
+xyplot(Score~Timepoint, groups=Task, subset=Subject=="5035_2", data=POMSlong, 
+       type=c('l', 'p'), main="Subject3 Responses", auto.key = list(space="top"), axis=axis.grid)
 xyplot(Score~Timepoint|Subject, groups=c(Task), layout=c(numsubs,1), aspect=2, data=POMSlong, 
        scales=list(alternating=FALSE), axis=axis.grid, type=c('l', 'p'), 
        main="Subject Responses, POMS", auto.key = list(space="top"))
@@ -353,5 +386,3 @@ POMSfilt=filter(POMSlong, Timepoint=="1"| Timepoint=="6")
 xyplot(Score~Timepoint, groups=c(Subject), data=POMSfilt, type=c('l', 'p'), main="POMS:First and Last Day", 
        auto.key = list(space="top"), scales=list(alternating=FALSE), axis=axis.grid)
 ```
-
-```{r, include=TRUE, echo=FALSE}
